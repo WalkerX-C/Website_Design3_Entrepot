@@ -1,25 +1,25 @@
 <?php
 /*
     MY Store - Homepage for Delivery 3
-    This file uses PHP to read product data from MySQL.
-    JavaScript is written inside this PHP file, so no separate .js file is needed.
+
+    Main logic:
+    1. Read latest products from MySQL database.
+    2. Read random products from MySQL database.
+    3. Use JavaScript to randomly choose a hero video.
+    4. Use JavaScript to open product modal.
 */
 
-$homepage_db_host = "127.0.0.1";
-$homepage_db_user = "root";
-$homepage_db_password = "Wxc@20060405";
-$homepage_db_name = "my_store";
+include "db_connect.php";
 
 function homepage_h($value) {
     return htmlspecialchars((string)$value, ENT_QUOTES, "UTF-8");
 }
 
-function homepage_first_value($row, $names, $default = "") {
-    foreach ($names as $name) {
-        if (isset($row[$name]) && $row[$name] !== "") {
-            return $row[$name];
-        }
+function homepage_value($row, $key, $default = "") {
+    if (isset($row[$key]) && $row[$key] !== null && $row[$key] !== "") {
+        return $row[$key];
     }
+
     return $default;
 }
 
@@ -39,23 +39,25 @@ function homepage_image_text($value) {
     $value = trim((string)$value);
 
     if ($value === "") {
-        return "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80";
+        return "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=900";
     }
 
     return $value;
 }
 
 function homepage_make_product($row) {
-    $id = homepage_first_value($row, array("productID", "product_id", "id", "ProductID"), "0");
-    $name = homepage_first_value($row, array("productName", "product_name", "name", "title", "model", "ProductName"), "Unnamed Product");
-    $price = homepage_first_value($row, array("price", "product_price", "sale_price", "ProductPrice"), "");
-    $image = homepage_first_value($row, array("image", "image_url", "product_image", "photo", "picture", "ProductImage"), "");
-    $seller = homepage_first_value($row, array("sellerName", "seller", "seller_name", "username", "seller_username", "SellerName"), "Demo Seller");
-    $message = homepage_first_value($row, array("sellerMessage", "seller_message", "message", "description", "details", "comment", "SellerMessage"), "No seller message has been provided.");
-    $created = homepage_first_value($row, array("uploadTime", "created_at", "upload_time", "listed_at", "date_added", "ProductDate"), "Not recorded");
-    $brand = homepage_first_value($row, array("brand", "Brand"), "");
-    $model = homepage_first_value($row, array("model", "Model"), "");
-    $location = homepage_first_value($row, array("location", "Location"), "");
+    $id = homepage_value($row, "productID", "0");
+    $name = homepage_value($row, "productName", "Unnamed Product");
+    $price = homepage_value($row, "price", "");
+    $image = homepage_value($row, "image", "");
+    $seller = homepage_value($row, "sellerName", "Unknown Seller");
+    $message = homepage_value($row, "sellerMessage", "No seller message has been provided.");
+    $created = homepage_value($row, "uploadTime", "Not recorded");
+    $brand = homepage_value($row, "brand", "");
+    $model = homepage_value($row, "model", "");
+    $location = homepage_value($row, "location", "");
+    $colour = homepage_value($row, "colour", "");
+    $year = homepage_value($row, "year", "");
 
     return array(
         "id" => (string)$id,
@@ -68,158 +70,107 @@ function homepage_make_product($row) {
         "brand" => (string)$brand,
         "model" => (string)$model,
         "location" => (string)$location,
+        "colour" => (string)$colour,
+        "year" => (string)$year,
         "detail_link" => "product.php?id=" . urlencode((string)$id)
     );
 }
 
-$homepage_products = array();
-$homepage_db_status = "Products are loaded from sample data because the database is not connected yet.";
+function homepage_fetch_products($connection, $sql) {
+    $products = array();
 
-mysqli_report(MYSQLI_REPORT_OFF);
-$homepage_connection = mysqli_connect($homepage_db_host, $homepage_db_user, $homepage_db_password, $homepage_db_name);
+    $result = mysqli_query($connection, $sql);
 
-if ($homepage_connection) {
-    mysqli_set_charset($homepage_connection, "utf8mb4");
-
-    $homepage_table_name = "";
-    $homepage_table_result = mysqli_query($homepage_connection, "SHOW TABLES");
-
-    if ($homepage_table_result) {
-        while ($homepage_table_row = mysqli_fetch_row($homepage_table_result)) {
-            if ($homepage_table_row[0] === "products") {
-                $homepage_table_name = "products";
-            }
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $products[] = homepage_make_product($row);
         }
     }
 
-    if ($homepage_table_name === "") {
-        $homepage_check_test = mysqli_query($homepage_connection, "SHOW TABLES LIKE 'test_product'");
-        if ($homepage_check_test && mysqli_num_rows($homepage_check_test) > 0) {
-            $homepage_table_name = "test_product";
-        }
-    }
-
-    if ($homepage_table_name === "products") {
-        $homepage_sql = "SELECT products.*, sellers.name AS sellerName
-                         FROM products
-                         LEFT JOIN sellers ON products.sellerID = sellers.sellerID
-                         ORDER BY products.uploadTime DESC, products.productID DESC
-                         LIMIT 20";
-        $homepage_result = mysqli_query($homepage_connection, $homepage_sql);
-
-        if ($homepage_result) {
-            while ($homepage_row = mysqli_fetch_assoc($homepage_result)) {
-                $homepage_products[] = homepage_make_product($homepage_row);
-            }
-        }
-    } else if ($homepage_table_name === "test_product") {
-        $homepage_sql = "SELECT * FROM test_product LIMIT 20";
-        $homepage_result = mysqli_query($homepage_connection, $homepage_sql);
-
-        if ($homepage_result) {
-            while ($homepage_row = mysqli_fetch_assoc($homepage_result)) {
-                $homepage_products[] = homepage_make_product($homepage_row);
-            }
-        }
-    }
-
-    if (count($homepage_products) > 0) {
-        $homepage_db_status = "These products are loaded from the MySQL database.";
-    } else {
-        $homepage_db_status = "Database connected, but no product records were found.";
-    }
-
-    mysqli_close($homepage_connection);
+    return $products;
 }
 
-$homepage_sample_products = array(
-    array(
-        "id" => "1",
-        "name" => "iPhone 17 Pro Max",
-        "price" => "$9,999.00",
-        "image" => "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
-        "seller" => "Demo Seller",
-        "message" => "Almost new condition. Suitable for daily use, study, work, and mobile photography.",
-        "created" => "2026-05-06 14:30:00",
-        "brand" => "Apple",
-        "model" => "iPhone 17 Pro Max",
-        "location" => "Beijing",
-        "detail_link" => "product.php?id=1"
-    ),
-    array(
-        "id" => "2",
-        "name" => "iPad Pro",
-        "price" => "$7,999.00",
-        "image" => "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=80",
-        "seller" => "Demo Seller",
-        "message" => "A clean tablet for note taking, online classes, design work, and entertainment.",
-        "created" => "2026-05-06 14:35:00",
-        "brand" => "Apple",
-        "model" => "iPad Pro",
-        "location" => "Shanghai",
-        "detail_link" => "product.php?id=2"
-    ),
-    array(
-        "id" => "3",
-        "name" => "AirPods Pro",
-        "price" => "$1,899.00",
-        "image" => "https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=900&q=80",
-        "seller" => "Demo Seller",
-        "message" => "Light and convenient wireless earphones for music, calls, and online meetings.",
-        "created" => "2026-05-06 14:40:00",
-        "brand" => "Apple",
-        "model" => "AirPods Pro",
-        "location" => "Guangzhou",
-        "detail_link" => "product.php?id=3"
-    ),
-    array(
-        "id" => "4",
-        "name" => "Nintendo Switch",
-        "price" => "$2,299.00",
-        "image" => "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?auto=format&fit=crop&w=900&q=80",
-        "seller" => "Demo Seller",
-        "message" => "A portable game console in good condition, suitable for home and travel use.",
-        "created" => "2026-05-06 14:45:00",
-        "brand" => "Nintendo",
-        "model" => "Switch",
-        "location" => "Chengdu",
-        "detail_link" => "product.php?id=4"
-    ),
-    array(
-        "id" => "5",
-        "name" => "Sony PlayStation 5",
-        "price" => "$3,899.00",
-        "image" => "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?auto=format&fit=crop&w=900&q=80",
-        "seller" => "Demo Seller",
-        "message" => "A modern console for high quality games and home entertainment.",
-        "created" => "2026-05-06 14:50:00",
-        "brand" => "Sony",
-        "model" => "PS5",
-        "location" => "Beijing",
-        "detail_link" => "product.php?id=5"
-    )
-);
+mysqli_set_charset($connection, "utf8mb4");
 
-if (count($homepage_products) === 0) {
-    $homepage_products = $homepage_sample_products;
+$homepage_latest_products = array();
+$homepage_explore_products = array();
+$homepage_db_status = "Database connected, but no product records were found.";
+$homepage_total_product_count = 0;
+
+$count_sql = "SELECT COUNT(*) AS totalProducts FROM products";
+$count_result = mysqli_query($connection, $count_sql);
+
+if ($count_result) {
+    $count_row = mysqli_fetch_assoc($count_result);
+    $homepage_total_product_count = (int)$count_row["totalProducts"];
 }
 
-while (count($homepage_products) < 7) {
-    foreach ($homepage_sample_products as $homepage_sample_product) {
-        $homepage_products[] = $homepage_sample_product;
-        if (count($homepage_products) >= 7) {
-            break;
-        }
-    }
+$homepage_latest_sql = "
+    SELECT products.*, sellers.name AS sellerName
+    FROM products
+    LEFT JOIN sellers ON products.sellerID = sellers.sellerID
+    ORDER BY products.uploadTime DESC, products.productID DESC
+    LIMIT 4
+";
+
+$homepage_latest_products = homepage_fetch_products($connection, $homepage_latest_sql);
+
+$homepage_latest_ids = array();
+
+foreach ($homepage_latest_products as $product) {
+    $homepage_latest_ids[] = (int)$product["id"];
 }
 
-$homepage_latest_products = array_slice($homepage_products, 0, 4);
-$homepage_explore_products = $homepage_products;
-shuffle($homepage_explore_products);
-$homepage_explore_products = array_slice($homepage_explore_products, 0, 3);
+$homepage_exclude_sql = "";
 
-$homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+if (count($homepage_latest_ids) > 0) {
+    $homepage_exclude_sql = "WHERE products.productID NOT IN (" . implode(",", $homepage_latest_ids) . ")";
+}
+
+$homepage_explore_sql = "
+    SELECT products.*, sellers.name AS sellerName
+    FROM products
+    LEFT JOIN sellers ON products.sellerID = sellers.sellerID
+    $homepage_exclude_sql
+    ORDER BY RAND()
+    LIMIT 3
+";
+
+$homepage_explore_products = homepage_fetch_products($connection, $homepage_explore_sql);
+
+if (count($homepage_explore_products) < 3) {
+    $homepage_explore_sql_backup = "
+        SELECT products.*, sellers.name AS sellerName
+        FROM products
+        LEFT JOIN sellers ON products.sellerID = sellers.sellerID
+        ORDER BY RAND()
+        LIMIT 3
+    ";
+
+    $homepage_explore_products = homepage_fetch_products($connection, $homepage_explore_sql_backup);
+}
+
+$homepage_modal_products_map = array();
+
+foreach ($homepage_latest_products as $product) {
+    $homepage_modal_products_map[$product["id"]] = $product;
+}
+
+foreach ($homepage_explore_products as $product) {
+    $homepage_modal_products_map[$product["id"]] = $product;
+}
+
+$homepage_modal_products = array_values($homepage_modal_products_map);
+
+if ($homepage_total_product_count > 0) {
+    $homepage_db_status = "These products are loaded from the MySQL database. Total products: " . $homepage_total_product_count . ".";
+}
+
+$homepage_products_json = json_encode($homepage_modal_products, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+
+mysqli_close($connection);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -227,7 +178,10 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY Store - Homepage</title>
     <link rel="stylesheet" href="homepage_style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
+
 <body>
 
     <header class="homepage_top_header">
@@ -251,8 +205,10 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
     </nav>
 
     <section class="homepage_hero homepage_floating" data-delay="0.16">
-        <video class="homepage_hero_video" autoplay muted loop playsinline>
-            <source src="https://www.apple.com/105/media/us/apple-vision-pro/2026/9251fc5e-bf57-4fae-8994-b06bbd3bb104/anim/drawer-visionos-voice/medium.mp4" type="video/mp4">
+        <video id="homepage_hero_video" class="homepage_hero_video" autoplay muted loop playsinline>
+            <source id="homepage_hero_video_source"
+                    src="https://www.apple.com/105/media/us/apple-vision-pro/2026/9251fc5e-bf57-4fae-8994-b06bbd3bb104/anim/drawer-visionos-voice/medium.mp4"
+                    type="video/mp4">
         </video>
 
         <div class="homepage_hero_overlay"></div>
@@ -279,23 +235,27 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
         <h3 class="homepage_group_title homepage_floating" data-delay="0.06">Recently Listed</h3>
 
         <div class="homepage_product_grid">
-            <?php foreach ($homepage_latest_products as $index => $product) { ?>
-                <article class="homepage_product_card homepage_floating" data-delay="<?php echo homepage_h(0.08 + ($index % 4) * 0.06); ?>">
-                    <div class="homepage_product_image_wrap">
-                        <img src="<?php echo homepage_h($product["image"]); ?>" alt="<?php echo homepage_h($product["name"]); ?>">
-                    </div>
+            <?php if (count($homepage_latest_products) > 0) { ?>
+                <?php foreach ($homepage_latest_products as $index => $product) { ?>
+                    <article class="homepage_product_card homepage_floating" data-delay="<?php echo homepage_h(0.08 + ($index % 4) * 0.06); ?>">
+                        <div class="homepage_product_image_wrap">
+                            <img src="<?php echo homepage_h($product["image"]); ?>" alt="<?php echo homepage_h($product["name"]); ?>">
+                        </div>
 
-                    <div class="homepage_product_text">
-                        <p class="homepage_product_id">ID: <?php echo homepage_h($product["id"]); ?></p>
-                        <h3><?php echo homepage_h($product["name"]); ?></h3>
-                        <p class="homepage_product_price"><?php echo homepage_h($product["price"]); ?></p>
-                        <p class="homepage_product_seller">Seller: <?php echo homepage_h($product["seller"]); ?></p>
-                        <p class="homepage_product_message"><?php echo homepage_h($product["message"]); ?></p>
-                        <p class="homepage_product_time">Listed: <?php echo homepage_h($product["created"]); ?></p>
-                    </div>
+                        <div class="homepage_product_text">
+                            <p class="homepage_product_id">ID: <?php echo homepage_h($product["id"]); ?></p>
+                            <h3><?php echo homepage_h($product["name"]); ?></h3>
+                            <p class="homepage_product_price"><?php echo homepage_h($product["price"]); ?></p>
+                            <p class="homepage_product_seller">Seller: <?php echo homepage_h($product["seller"]); ?></p>
+                            <p class="homepage_product_message"><?php echo homepage_h($product["message"]); ?></p>
+                            <p class="homepage_product_time">Listed: <?php echo homepage_h($product["created"]); ?></p>
+                        </div>
 
-                    <button type="button" class="homepage_card_btn" onclick="homepage_openProductModal('<?php echo homepage_h($product["id"]); ?>')">Learn More</button>
-                </article>
+                        <button type="button" class="homepage_card_btn" onclick="homepage_openProductModal('<?php echo homepage_h($product["id"]); ?>')">Learn More</button>
+                    </article>
+                <?php } ?>
+            <?php } else { ?>
+                <p>No product records were found in the database.</p>
             <?php } ?>
         </div>
     </section>
@@ -304,22 +264,24 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
         <h3 class="homepage_group_title homepage_floating" data-delay="0.06">More to Explore</h3>
 
         <div class="homepage_product_grid homepage_explore_grid">
-            <?php foreach ($homepage_explore_products as $index => $product) { ?>
-                <article class="homepage_product_card homepage_floating" data-delay="<?php echo homepage_h(0.08 + ($index % 4) * 0.06); ?>">
-                    <div class="homepage_product_image_wrap">
-                        <img src="<?php echo homepage_h($product["image"]); ?>" alt="<?php echo homepage_h($product["name"]); ?>">
-                    </div>
+            <?php if (count($homepage_explore_products) > 0) { ?>
+                <?php foreach ($homepage_explore_products as $index => $product) { ?>
+                    <article class="homepage_product_card homepage_floating" data-delay="<?php echo homepage_h(0.08 + ($index % 4) * 0.06); ?>">
+                        <div class="homepage_product_image_wrap">
+                            <img src="<?php echo homepage_h($product["image"]); ?>" alt="<?php echo homepage_h($product["name"]); ?>">
+                        </div>
 
-                    <div class="homepage_product_text">
-                        <p class="homepage_product_id">ID: <?php echo homepage_h($product["id"]); ?></p>
-                        <h3><?php echo homepage_h($product["name"]); ?></h3>
-                        <p class="homepage_product_price"><?php echo homepage_h($product["price"]); ?></p>
-                        <p class="homepage_product_seller">Seller: <?php echo homepage_h($product["seller"]); ?></p>
-                        <p class="homepage_product_message"><?php echo homepage_h($product["message"]); ?></p>
-                    </div>
+                        <div class="homepage_product_text">
+                            <p class="homepage_product_id">ID: <?php echo homepage_h($product["id"]); ?></p>
+                            <h3><?php echo homepage_h($product["name"]); ?></h3>
+                            <p class="homepage_product_price"><?php echo homepage_h($product["price"]); ?></p>
+                            <p class="homepage_product_seller">Seller: <?php echo homepage_h($product["seller"]); ?></p>
+                            <p class="homepage_product_message"><?php echo homepage_h($product["message"]); ?></p>
+                        </div>
 
-                    <button type="button" class="homepage_card_btn" onclick="homepage_openProductModal('<?php echo homepage_h($product["id"]); ?>')">Learn More</button>
-                </article>
+                        <button type="button" class="homepage_card_btn" onclick="homepage_openProductModal('<?php echo homepage_h($product["id"]); ?>')">Learn More</button>
+                    </article>
+                <?php } ?>
             <?php } ?>
 
             <a class="homepage_more_link_card homepage_floating" data-delay="0.24" href="search.php">
@@ -394,10 +356,12 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
                     <p class="homepage_advantage_title">Flexible payment</p>
                     <p class="homepage_advantage_text">Support for a clearer purchase process in the next stage.</p>
                 </div>
+
                 <div class="homepage_advantage_item">
                     <p class="homepage_advantage_title">Seller record</p>
                     <p class="homepage_advantage_text">Each product can show its seller and seller message.</p>
                 </div>
+
                 <div class="homepage_advantage_item">
                     <p class="homepage_advantage_title">Backend ready</p>
                     <p class="homepage_advantage_text">The page can read from MySQL through PHP.</p>
@@ -409,6 +373,14 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
     <script>
         var homepage_products = <?php echo $homepage_products_json; ?>;
 
+        var homepage_video_list = [
+            "https://www.apple.com/105/media/us/apple-vision-pro/2026/9251fc5e-bf57-4fae-8994-b06bbd3bb104/anim/drawer-visionos-voice/medium.mp4",
+            "https://www.apple.com/105/media/us/macbook-neo/2026/eee281c9-06d4-45d9-9a37-ef16ad413279/anim/hero/medium_2x.mp4",
+            "https://www.apple.com/105/media/us/airpods-max/2024/e8f376d6-82b2-40ca-8a22-5f87de755d6b/anim/max-loop/medium_2x.mp4"
+        ];
+
+        var homepage_hls_player = null;
+
         function homepage_goToSearch() {
             window.location.href = "search.php";
         }
@@ -417,12 +389,84 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
             document.getElementById("homepage_latest").scrollIntoView();
         }
 
+        function homepage_tryPlayVideo(video) {
+            var playResult = video.play();
+
+            if (playResult !== undefined) {
+                playResult.catch(function () {
+                    console.log("The browser blocked autoplay or the selected video could not be played.");
+                });
+            }
+        }
+
+        function homepage_playMp4Video(videoUrl) {
+            var video = document.getElementById("homepage_hero_video");
+            var source = document.getElementById("homepage_hero_video_source");
+
+            if (homepage_hls_player !== null) {
+                homepage_hls_player.destroy();
+                homepage_hls_player = null;
+            }
+
+            source.src = videoUrl;
+            source.type = "video/mp4";
+
+            video.load();
+            homepage_tryPlayVideo(video);
+        }
+
+        function homepage_playHlsVideo(videoUrl) {
+            var video = document.getElementById("homepage_hero_video");
+            var source = document.getElementById("homepage_hero_video_source");
+
+            if (homepage_hls_player !== null) {
+                homepage_hls_player.destroy();
+                homepage_hls_player = null;
+            }
+
+            source.removeAttribute("src");
+            video.removeAttribute("src");
+            video.load();
+
+            if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                source.src = videoUrl;
+                source.type = "application/vnd.apple.mpegurl";
+
+                video.load();
+                homepage_tryPlayVideo(video);
+            } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
+                homepage_hls_player = new Hls();
+                homepage_hls_player.loadSource(videoUrl);
+                homepage_hls_player.attachMedia(video);
+
+                homepage_hls_player.on(Hls.Events.MANIFEST_PARSED, function () {
+                    homepage_tryPlayVideo(video);
+                });
+            } else {
+                homepage_playMp4Video(homepage_video_list[0]);
+            }
+        }
+
+        function homepage_setRandomHeroVideo() {
+            var randomIndex = Math.floor(Math.random() * homepage_video_list.length);
+            var videoUrl = homepage_video_list[randomIndex];
+
+            console.log("Current hero video:", videoUrl);
+
+            if (videoUrl.indexOf(".m3u8") !== -1) {
+                homepage_playHlsVideo(videoUrl);
+            } else {
+                homepage_playMp4Video(videoUrl);
+            }
+        }
+
         function homepage_findProduct(productId) {
             for (var i = 0; i < homepage_products.length; i++) {
                 if (homepage_products[i].id == productId) {
                     return homepage_products[i];
                 }
             }
+
             return null;
         }
 
@@ -436,7 +480,14 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
             document.getElementById("homepage_modal_label").textContent = "Product ID: " + product.id;
             document.getElementById("homepage_modal_title").textContent = product.name;
             document.getElementById("homepage_modal_price").textContent = product.price;
-            document.getElementById("homepage_modal_desc").textContent = "Brand: " + product.brand + " | Model: " + product.model + " | Location: " + product.location;
+
+            document.getElementById("homepage_modal_desc").textContent =
+                "Brand: " + product.brand +
+                " | Model: " + product.model +
+                " | Year: " + product.year +
+                " | Colour: " + product.colour +
+                " | Location: " + product.location;
+
             document.getElementById("homepage_modal_seller").textContent = product.seller;
             document.getElementById("homepage_modal_message").textContent = product.message;
             document.getElementById("homepage_modal_time").textContent = product.created;
@@ -477,8 +528,13 @@ $homepage_products_json = json_encode($homepage_products, JSON_HEX_TAG | JSON_HE
             }
         }
 
-        window.onload = homepage_showFloatingItems;
+        window.onload = function () {
+            homepage_setRandomHeroVideo();
+            homepage_showFloatingItems();
+        };
+
         window.onscroll = homepage_showFloatingItems;
     </script>
+
 </body>
 </html>
