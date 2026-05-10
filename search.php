@@ -2,19 +2,19 @@
 include "db_connect.php";
 session_start();
 
-// 获取搜索关键词和排序
+
 $raw_query = isset($_GET['q']) ? $_GET['q'] : "";
 
-// 问题 1 解决：处理 SQL 通配符问题，将 % 和 _ 转义为普通字符
+//safe for %
 $safe_query = mysqli_real_escape_string($connection, $raw_query);
 $like_query = str_replace(['%', '_'], ['\%', '\_'], $safe_query);
 
 $sort = isset($_GET['sort']) ? $_GET['sort'] : "newest";
 
-// 构建 SQL 语句
+// sql
 $sql = "SELECT * FROM products WHERE (productName LIKE '%$like_query%' OR brand LIKE '%$like_query%')";
 
-// 排序逻辑
+
 if ($sort == "priceLH") {
     $sql .= " ORDER BY price ASC";
 } elseif ($sort == "priceHL") {
@@ -55,6 +55,24 @@ $result = mysqli_query($connection, $sql);
         <a href="seller_login.php">Seller Login</a>
         <a href="bag.php">Bag</a>
     </nav>
+    
+    <?php if(isset($_SESSION['success_msg'])): ?>
+        <div style="width: 92%; max-width: 1440px; margin: 20px auto; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; font-family: sans-serif;">
+            <?php 
+                echo htmlspecialchars($_SESSION['success_msg']); 
+                unset($_SESSION['success_msg']); 
+            ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if(isset($_SESSION['error_msg'])): ?>
+        <div style="width: 92%; max-width: 1440px; margin: 20px auto; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; background-color: #fce8e6; color: #d93025; border: 1px solid #fad2cf; font-family: sans-serif;">
+            <?php 
+                echo htmlspecialchars($_SESSION['error_msg']); 
+                unset($_SESSION['error_msg']); 
+            ?>
+        </div>
+    <?php endif; ?>
 
     <main class="search-container">
         <div class="search-header">
@@ -81,7 +99,7 @@ $result = mysqli_query($connection, $sql);
             <section class="product-grid" id="resultsGrid">
                 <?php if(mysqli_num_rows($result) > 0): ?>
                     <?php while($row = mysqli_fetch_assoc($result)): ?>
-                        <!-- 问题 2 解决：为整个卡片添加跳转逻辑，并设置手型光标 -->
+                        
                         <div class="product-card" 
                              style="cursor: pointer;" 
                              onclick="window.location.href='product.php?id=<?php echo $row['productID']; ?>'">
@@ -90,7 +108,7 @@ $result = mysqli_query($connection, $sql);
                             <div class="product-title"><?php echo htmlspecialchars($row['productName']); ?></div>
                             <div class="product-price">$<?php echo number_format($row['price'], 2); ?></div>
                             
-                            <!-- 阻止冒泡：点击按钮时只触发添加购物车，不会触发卡片跳转 -->
+                            
                             <form action="add_to_cart.php" method="POST" onclick="event.stopPropagation();">
                                 <input type="hidden" name="product_id" value="<?php echo $row['productID']; ?>">
                                 <button type="submit" class="btn-add">Add to Bag</button>
