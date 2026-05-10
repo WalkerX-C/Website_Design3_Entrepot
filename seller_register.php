@@ -30,8 +30,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif (!preg_match("/^[a-zA-Z0-9_]{4,20}$/", $username)) {
         // 用户名正则：4-20位，只能包含大小写字母、数字和下划线
         $error = "Username must be 4-20 characters (letters, numbers, underscores).";
+    } elseif (strlen($password) > 30) {
+        $error = "Password is too long (maximum 30 characters).";        
     } elseif (!preg_match("/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/", $password)) {
-        // 密码正则：至少8位，必须包含至少一个字母和一个数字
         $error = "Password must be at least 8 characters, including 1 letter and 1 number.";
     } else {
         $check_sql = "SELECT sellerID FROM sellers WHERE email = ? OR username = ?";
@@ -43,12 +44,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (mysqli_stmt_num_rows($check_stmt) > 0) {
             $error = "Registration failed: Email or Username is already registered.";
         } else {
-
-            $hashed_password = md5($password);
-
             $insert_sql = "INSERT INTO sellers (name, address, phone, email, username, password) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($connection, $insert_sql);
-            mysqli_stmt_bind_param($stmt, "ssssss", $name, $address, $phone, $email, $username, $hashed_password);
+            mysqli_stmt_bind_param($stmt, "ssssss", $name, $address, $phone, $email, $username, $password);
 
             if (mysqli_stmt_execute($stmt)) {
                 $success = "Account created successfully! You can now login.";
