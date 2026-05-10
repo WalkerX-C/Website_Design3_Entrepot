@@ -44,8 +44,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (mysqli_stmt_num_rows($check_stmt) > 0) {
             $error = "Registration failed: Email or Username is already registered.";
         } else {
+
             $insert_sql = "INSERT INTO sellers (name, address, phone, email, username, password) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($connection, $insert_sql);
+
             mysqli_stmt_bind_param($stmt, "ssssss", $name, $address, $phone, $email, $username, $password);
 
             if (mysqli_stmt_execute($stmt)) {
