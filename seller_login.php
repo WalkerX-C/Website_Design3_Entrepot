@@ -1,41 +1,34 @@
 <?php
+
 session_start();
 require __DIR__ . '/db_connect.php';
 
 $error = '';
-// 用于表单回显，用户输入错密码时不用重新输入账号
 $username_or_email = ''; 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // 清理输入数据，使用 ?? '' 防止未定义报错
     $username_or_email = trim($_POST['username_or_email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // 基础非空验证
     if (empty($username_or_email) || empty($password)) {
         $error = "Please enter both username/email and password.";
     } else {
-        // 使用预处理语句防止 SQL 注入 (SQL Injection)
-        // 允许用户使用 username 或者 email 登录，提升 UX（用户体验）
         $sql = "SELECT sellerID, name, password FROM sellers WHERE username = ? OR email = ?";
         $stmt = mysqli_prepare($connection, $sql);
         mysqli_stmt_bind_param($stmt, "ss", $username_or_email, $username_or_email);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
 
-        // 检查数据库中是否存在该账号
         if ($row = mysqli_fetch_assoc($result)) {
 
-            if (md5($password) === $row['password']) {
-                
-                // 密码正确，创建登录会话 (Session)
+            if ($password === $row['password']) {
+
                 $_SESSION['seller_logged_in'] = true;
-                $_SESSION['seller_id'] = $row['sellerID'];
+                $_SESSION['sellerID'] = $row['sellerID'];
                 $_SESSION['seller_name'] = $row['name'];
                 
-                // 登录成功后跳转到卖家后台/主页
-                header("Location: seller_dashboard.php"); 
+                header("Location: add_product.php"); // 根据你的实际页面跳转
                 exit();
                 
             } else {
