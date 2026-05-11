@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-// ID for local test
 // $_SESSION['sellerID'] = 1; 
 
 if (!isset($_SESSION['sellerID'])) {
@@ -10,16 +9,17 @@ if (!isset($_SESSION['sellerID'])) {
 
 $sellerID = $_SESSION['sellerID'];
 
-include 'db_connect.php'; // uniform from the leader
+include 'db_connect.php';
 
-$productName   = $_POST['productName'];
-$price         = $_POST['price'];
-$brand         = $_POST['brand'];
-$model         = $_POST['model'];
-$colour        = $_POST['colour'];
-$year          = $_POST['year'];
-$location      = $_POST['location'];
-$sellerMessage = $_POST['sellerMessage'];
+// update security, protect the page from SQl injection attacks
+$productName   = mysqli_real_escape_string($connection, $_POST['productName']);
+$price         = mysqli_real_escape_string($connection, $_POST['price']);
+$brand         = mysqli_real_escape_string($connection, $_POST['brand']);
+$model         = mysqli_real_escape_string($connection, $_POST['model']);
+$colour        = mysqli_real_escape_string($connection, $_POST['colour']);
+$year          = mysqli_real_escape_string($connection, $_POST['year']);
+$location      = mysqli_real_escape_string($connection, $_POST['location']);
+$sellerMessage = mysqli_real_escape_string($connection, $_POST['sellerMessage']);
 
 $imagePath = ""; 
 if (isset($_FILES['productImage']) && $_FILES['productImage']['error'] == 0) {
@@ -28,7 +28,7 @@ if (isset($_FILES['productImage']) && $_FILES['productImage']['error'] == 0) {
     $targetFilePath = $targetDir . $fileName;
 
     if (move_uploaded_file($_FILES["productImage"]["tmp_name"], $targetFilePath)) {
-        $imagePath = $targetFilePath;
+        $imagePath = $targetFilePath; 
     } else {
         die("Error uploading the image.");
     }
@@ -42,12 +42,12 @@ $sql = "INSERT INTO products
         ('$sellerID', '$productName', '$brand', '$model', '$year', '$colour', '$location', '$price', '$imagePath', '$sellerMessage', NOW())";
 
 if (mysqli_query($connection, $sql)) {
-    echo "<h2>Product Launched Successfully!</h2>";
-    echo "<p>Your product <strong>$productName</strong> has been added to the store.</p>";
-    echo "<a href='add_product.php'>Add another product</a> | <a href='homepage.html'>Back to Home</a>";
+    mysqli_close($connection);
+    // success with the parameter with success = 1 and turn back to the origin page
+    header("Location: add_product.php?success=1");
+    exit();
 } else {
     echo "Error inserting record: " . mysqli_error($connection);
+    mysqli_close($connection);
 }
-
-mysqli_close($connection);
 ?>
