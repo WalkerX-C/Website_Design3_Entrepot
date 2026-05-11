@@ -1,3 +1,12 @@
+<?php
+session_start();
+
+if (!isset($_SESSION["sellerID"])) {
+    $_SESSION["error_msg"] = "Please login as a seller before registering a product.";
+    header("Location: seller_login.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +14,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Product Launch Center Pro</title>
 <style>
-  :root {
+    :root {
     --primary: #0071e3;
     --text-main: #1d1d1f;
     --text-sec: #86868b;
@@ -40,7 +49,7 @@
     --gradient-3: #13131a;
     --gradient-4: #0a0a0f;
   }
-
+  
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
     color: var(--text-main);
@@ -62,14 +71,11 @@
 
   .bg-blobs {
     position: fixed;
-    top: 0; 
-    left: 0; 
-    width: 100vw; 
-    height: 100vh;
+    top: 0; left: 0; width: 100vw; height: 100vh;
     z-index: -1;
     overflow: hidden;
   }
-
+  
   .blob {
     position: absolute;
     filter: blur(80px);
@@ -81,29 +87,23 @@
   }
 
   .blob-1 {
-    width: 600px; 
-    height: 600px;
+    width: 600px; height: 600px;
     background: var(--blob-1);
-    top: -100px; 
-    left: -100px;
+    top: -100px; left: -100px;
     animation: float1 8s infinite ease-in-out alternate;
   }
 
   .blob-2 {
-    width: 700px; 
-    height: 700px;
+    width: 700px; height: 700px;
     background: var(--blob-2);
-    bottom: -200px; 
-    right: -100px;
+    bottom: -200px; right: -100px;
     animation: float2 10s infinite ease-in-out alternate-reverse;
   }
 
   .blob-3 {
-    width: 500px; 
-    height: 500px;
+    width: 500px; height: 500px;
     background: var(--blob-3);
-    top: 30%; 
-    left: 40%;
+    top: 30%; left: 40%;
     animation: float3 9s infinite ease-in-out alternate;
   }
 
@@ -216,7 +216,7 @@
     text-decoration: none;
     color: var(--text-main);
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 500;
     padding: 8px 14px;
     transition: color 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
   }
@@ -367,8 +367,8 @@
     color: var(--text-main);
   }
 
-  input:focus,
-  select:focus,
+  input:focus, 
+  select:focus, 
   textarea:focus {
     outline: none;
     border-color: var(--primary);
@@ -379,7 +379,7 @@
     display: flex;
     gap: 20px;
   }
-
+  
   .flex-col {
     flex: 1;
   }
@@ -393,7 +393,7 @@
     transition: all 0.3s ease;
     margin-bottom: 16px;
   }
-
+  
   .upload-area:hover {
     border-color: var(--primary);
     background: rgba(0, 113, 227, 0.05);
@@ -442,7 +442,7 @@
     transition: all 0.3s ease;
     margin-top: 20px;
   }
-
+  
   .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
@@ -454,6 +454,7 @@
     .device-preview { max-width: 100%; }
   }
 </style>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 
@@ -465,16 +466,16 @@
 
 <header class="top-header">
   <div class="title-area">
-    <h1>MY Store</h1>
-    <p class="title-sub">A simple and modern place to explore electronic products.</p>
+      <h1>MY Store</h1>
+      <p class="title-sub">A simple and modern place to explore electronic products.</p>
   </div>
   <div class="header-controls">
-    <button class="theme-toggle" id="themeToggle">Dark Mode</button>
-    <div class="header-icon">
-      <a href="homepage.php">
-        <img src="home.png" alt="Home Icon">
-      </a>
-    </div>
+      <button class="theme-toggle" id="themeToggle">Dark Mode</button>
+      <div class="header-icon">
+          <a href="homepage.php">
+              <img src="home.png" alt="Home Icon">
+          </a>
+      </div>
   </div>
 </header>
 
@@ -483,9 +484,16 @@
   <a href="search.php">Search</a>
   <a href="add_product.php">Product Registration</a>
   <a href="seller_login.php">Seller Login</a>
+  <a href="bag.php">Bag</a>
 </nav>
 
+<!-- make it dispaly on the top of page -->
+<?php if (isset($_GET['success']) && $_GET['success'] === '1'): ?>
+  <div class="notice success">Product launched successfully.</div>
+<?php endif; ?>
+
 <div class="main-wrapper">
+  
   <div class="preview-section">
     <div class="device-preview">
       <div class="preview-image-container">
@@ -503,7 +511,6 @@
   <div class="form-section">
     <div class="form-card">
       <h2>List New Item</h2>
-      <!-- add action, method and enctype -->
       <form id="productForm" action="process_add_product.php" method="POST" enctype="multipart/form-data">
         
         <div class="form-group">
@@ -515,7 +522,6 @@
           <div class="flex-col">
             <label for="price">Price USD</label>
             <input type="number" id="price" name="price" required min="0" step="0.01" placeholder="99.00">
-          <!-- change Inventory to Brand -->
           </div>
           <div class="flex-col">
             <label for="brand">Brand</label>
@@ -524,25 +530,25 @@
         </div>
 
         <div class="form-group flex-row">
-          <div class="flex-col">
-            <label for="model">Model</label>
-            <input type="text" id="model" name="model" required placeholder="Enter product model">
-          </div>
-          <div class="flex-col">
-            <label for="colour">Colour</label>
-            <input type="text" id="colour" name="colour" required placeholder="Enter product colour">
-          </div>
+            <div class="flex-col">
+                <label for="model">Model</label>
+                <input type="text" id="model" name="model" required placeholder="Enter product model">
+            </div>
+            <div class="flex-col">
+                <label for="colour">Colour</label>
+                <input type="text" id="colour" name="colour" required placeholder="Enter product colour">
+            </div>
         </div>
 
         <div class="form-group flex-row">
-          <div class="flex-col">
-            <label for="year">Year</label>
-            <input type="number" id="year" name="year" required placeholder="2026">
-          </div>
-          <div class="flex-col">
-            <label for="location">Location</label>
-            <input type="text" id="location" name="location" required placeholder="Beijing, Shanghai...">
-          </div>
+            <div class="flex-col">
+                <label for="year">Year</label>
+                <input type="number" id="year" name="year" required placeholder="2026">
+            </div>
+            <div class="flex-col">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" required placeholder="Beijing, Shanghai...">
+            </div>
         </div>
 
         <div class="form-group">
@@ -563,6 +569,7 @@
       </form>
     </div>
   </div>
+
 </div>
 
 <script>
@@ -612,7 +619,6 @@
     }
   });
 
-  // check if it has parameter success = 1
   window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('success') === '1') {
@@ -621,8 +627,7 @@
           btn.style.background = '#32d74b';
           btn.style.color = '#fff';
           
-        // recover the origin page, delete the information on the URL  
-        setTimeout(() => {
+          setTimeout(() => {
               btn.textContent = 'Launch Product';
               btn.style.background = 'var(--text-main)';
               btn.style.color = 'var(--bg-main)';
