@@ -25,7 +25,6 @@ body {
     background-color: var(--bg-color);
 }
 
-/* --- Top bar (match homepage.html style) --- */
 .top-header,
 .nav-bar {
     width: 92%;
@@ -99,7 +98,6 @@ body {
     background-color: #f0f0f0;
 }
 
-/* Search Layout */
 .search-container {
     max-width: 1200px;
     margin: 40px auto;
@@ -134,13 +132,11 @@ body {
     background: var(--card-bg);
 }
 
-/* Layout: Sidebar + Grid */
 .layout-wrapper {
     display: flex;
     gap: 40px;
 }
 
-/* Filter Tools */
 .filter-sidebar {
     width: 240px;
     flex-shrink: 0;
@@ -167,7 +163,6 @@ body {
     cursor: pointer;
 }
 
-/* Product Grid */
 .product-grid {
     flex-grow: 1;
     display: grid;
@@ -223,7 +218,6 @@ body {
 
 .btn-add:hover { background: #005bb5; }
 
-/* Bag Page Styles */
 .bag-container { max-width: 800px; margin: 60px auto; padding: 0 20px; }
 .bag-item { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--border-color); }
 .bag-item img { width: 80px; border-radius: 8px; margin-right: 20px; }
@@ -316,7 +310,6 @@ body {
     cursor: pointer;
 }
 
-/* --- Login page specific --- */
 .login-body {
     background-color: #ffffff;
 }
@@ -465,7 +458,6 @@ gap: 12px;
 }
 }
 
-/* 增强版提示横幅样式 */
 .msg-banner {
     display: block !important;
     width: 92% !important;

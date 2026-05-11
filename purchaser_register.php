@@ -24,7 +24,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     VALUES ('$name', 'Not Provided', '$phone', '$email', '$email', '$password', '$register_time')";
             
             if (mysqli_query($connection, $sql)) {
-                echo "<script>alert('Registration successful! Please login.'); window.location.href='purchaser_login.php';</script>";
+                $_SESSION['success_msg'] = "Registration successful. Please login.";
+                header("Location: purchaser_login.php");
                 exit();
             } else {
                 $message = "Error: " . mysqli_error($connection);
@@ -38,8 +39,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account - MY Store</title>
     <link rel="stylesheet" href="login&search.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body class="login-body">
     <header class="top-header">
