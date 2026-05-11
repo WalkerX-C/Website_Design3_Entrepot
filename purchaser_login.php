@@ -37,8 +37,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_logged_in) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - MY Store</title>
     <link rel="stylesheet" href="login&search.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body class="login-body">
     <header class="top-header">
@@ -56,6 +58,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !$is_logged_in) {
         <a href="seller_login.php">Seller Login</a>
         <a href="bag.php">Bag</a>
     </nav>
+
+    <?php if(isset($_SESSION['success_msg'])): ?>
+        <div class="notice success">
+            <?php
+                echo htmlspecialchars($_SESSION['success_msg'], ENT_QUOTES, 'UTF-8');
+                unset($_SESSION['success_msg']);
+            ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if(isset($_SESSION['error_msg'])): ?>
+        <div class="notice error">
+            <?php
+                echo htmlspecialchars($_SESSION['error_msg'], ENT_QUOTES, 'UTF-8');
+                unset($_SESSION['error_msg']);
+            ?>
+        </div>
+    <?php endif; ?>
 
     <main class="login-container">
         <div class="login-card">
