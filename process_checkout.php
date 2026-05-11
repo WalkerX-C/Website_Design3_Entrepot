@@ -25,3 +25,4 @@ $_SESSION["error_msg"] = "Checkout failed: " . $error;
 header("Location: bag.php");
 exit();
 ?>
+ 
