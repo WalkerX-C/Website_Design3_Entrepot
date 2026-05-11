@@ -581,11 +581,9 @@
   document.getElementById('productName').addEventListener('input', e => {
     document.getElementById('liveTitle').textContent = e.target.value || 'Product Title';
   });
-
   document.getElementById('price').addEventListener('input', e => {
     document.getElementById('livePrice').textContent = e.target.value || '0.00';
   });
-
   document.getElementById('description').addEventListener('input', e => {
     document.getElementById('liveDesc').textContent = e.target.value || 'Product description will appear here.';
   });
@@ -613,7 +611,25 @@
         reader.readAsDataURL(file);
     }
   });
-  // removed e.preventDefault()
+
+  // check if it has parameter success = 1
+  window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('success') === '1') {
+          const btn = document.querySelector('.btn');
+          btn.textContent = 'Launch Successful!';
+          btn.style.background = '#32d74b';
+          btn.style.color = '#fff';
+          
+        // recover the origin page, delete the information on the URL  
+        setTimeout(() => {
+              btn.textContent = 'Launch Product';
+              btn.style.background = 'var(--text-main)';
+              btn.style.color = 'var(--bg-main)';
+              window.history.replaceState({}, document.title, window.location.pathname);
+          }, 3000);
+      }
+  };
 </script>
 </body>
 </html>
