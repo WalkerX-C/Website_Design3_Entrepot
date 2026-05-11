@@ -2,7 +2,7 @@
 $host = "127.0.0.1";
 $user = "root";
 $database = "my_store";
-$primary_password = "Wxc@20060405";
+$primary_password = "";
 $fallback_password = "";
 
 function database_connect_without_db($host, $user, $primary_password, $fallback_password) {
