@@ -2,19 +2,30 @@
 include "db_connect.php";
 session_start();
 
-if (isset($_GET['id']) && isset($_SESSION['buyer_id'])) {
-    $cart_id = mysqli_real_escape_string($connection, $_GET['id']);
-    $buyer_id = $_SESSION['buyer_id'];
-
-    // only allow remove item from current account
-    $sql = "DELETE FROM cart WHERE cartID = '$cart_id' AND buyerID = '$buyer_id'";
-    
-    if (mysqli_query($connection, $sql)) {
-        header("Location: bag.php");
-    } else {
-        echo "Delete failed: " . mysqli_error($connection);
-    }
-} else {
+if (!isset($_SESSION["buyer_id"])) {
     header("Location: purchaser_login.php");
+    exit();
 }
+
+if (!isset($_GET["id"])) {
+    $_SESSION["error_msg"] = "No bag item was selected.";
+    header("Location: bag.php");
+    exit();
+}
+
+$cart_id = (int)$_GET["id"];
+$buyer_id = (int)$_SESSION["buyer_id"];
+
+$stmt = mysqli_prepare($connection, "DELETE FROM cart WHERE cartID = ? AND buyerID = ?");
+mysqli_stmt_bind_param($stmt, "ii", $cart_id, $buyer_id);
+
+if (mysqli_stmt_execute($stmt)) {
+    $_SESSION["success_msg"] = "Item removed from bag.";
+} else {
+    $_SESSION["error_msg"] = "Delete failed: " . mysqli_error($connection);
+}
+
+mysqli_stmt_close($stmt);
+header("Location: bag.php");
+exit();
 ?>

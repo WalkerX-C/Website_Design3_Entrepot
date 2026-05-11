@@ -2,19 +2,28 @@
 include "db_connect.php";
 session_start();
 
-
-if (!isset($_SESSION['buyer_id'])) {
-    die("<script>alert('Please login first!'); window.location.href='purchaser_login.php';</script>");
+function bag_h($value) {
+    return htmlspecialchars((string)$value, ENT_QUOTES, "UTF-8");
 }
 
-$buyer_id = $_SESSION['buyer_id'];
+if (!isset($_SESSION['buyer_id'])) {
+    $_SESSION['error_msg'] = "Please login first.";
+    header("Location: purchaser_login.php");
+    exit();
+}
+
+$buyer_id = (int)$_SESSION['buyer_id'];
 
 
 $sql = "SELECT cart.*, products.productName, products.price, products.image 
         FROM cart 
         JOIN products ON cart.productID = products.productID 
-        WHERE cart.buyerID = '$buyer_id' AND cart.cartStatus = 'In Cart'";
-$result = mysqli_query($connection, $sql);
+        WHERE cart.buyerID = ? AND cart.cartStatus = 'In Cart'
+        ORDER BY cart.addedTime DESC, cart.cartID DESC";
+$stmt = mysqli_prepare($connection, $sql);
+mysqli_stmt_bind_param($stmt, "i", $buyer_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 
 $total_price = 0;
 ?>
@@ -25,6 +34,7 @@ $total_price = 0;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="login&search.css">
+    <link rel="stylesheet" href="theme.css">
     <title>Your Bag</title>
 </head>
 <body>
@@ -44,6 +54,24 @@ $total_price = 0;
         <a href="bag.php">Bag</a>
     </nav>
 
+    <?php if(isset($_SESSION['success_msg'])): ?>
+        <div class="notice success">
+            <?php
+                echo bag_h($_SESSION['success_msg']);
+                unset($_SESSION['success_msg']);
+            ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if(isset($_SESSION['error_msg'])): ?>
+        <div class="notice error">
+            <?php
+                echo bag_h($_SESSION['error_msg']);
+                unset($_SESSION['error_msg']);
+            ?>
+        </div>
+    <?php endif; ?>
+
     <main class="bag-container">
         <h1>Review your bag.</h1>
         
@@ -53,11 +81,11 @@ $total_price = 0;
                     $total_price += $item['price'] * $item['quantity'];
                 ?>
                     <div class="bag-item">
-                        <img src="<?php echo $item['image']; ?>" alt="Car">
+                        <img src="<?php echo bag_h($item['image']); ?>" alt="<?php echo bag_h($item['productName']); ?>">
                         <div class="bag-item-info">
-                            <div class="bag-item-title"><?php echo $item['productName']; ?></div>
-                            <div class="bag-item-price">$<?php echo number_format($item['price'], 2); ?> x <?php echo $item['quantity']; ?></div>
-                            <a href="remove_item.php?id=<?php echo $item['cartID']; ?>" class="remove-btn">Remove</a>
+                            <div class="bag-item-title"><?php echo bag_h($item['productName']); ?></div>
+                            <div class="bag-item-price">$<?php echo number_format((float)$item['price'], 2); ?> x <?php echo (int)$item['quantity']; ?></div>
+                            <a href="remove_item.php?id=<?php echo (int)$item['cartID']; ?>" class="remove-btn">Remove</a>
                         </div>
                     </div>
                 <?php endwhile; ?>
@@ -88,7 +116,7 @@ $total_price = 0;
                 <input type="text" name="card" placeholder="Enter your card number" required>
 
                 <label>Receiver Name</label>
-                <input type="text" name="name" value="<?php echo $_SESSION['buyer_name']; ?>" required>
+                <input type="text" name="name" value="<?php echo bag_h($_SESSION['buyer_name'] ?? ''); ?>" required>
 
                 <label>Shipping Address</label>
                 <textarea name="address" required></textarea>
