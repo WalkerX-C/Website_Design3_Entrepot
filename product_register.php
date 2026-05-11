@@ -26,8 +26,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Invalid email format.";
     } elseif (!preg_match("/^[a-zA-Z0-9_]{4,20}$/", $username)) {
         $error = "Username must be 4-20 characters (letters, numbers, underscores).";
-    } elseif (strlen($password) > 30) {
-        $error = "Password is too long (maximum 30 characters).";        
     } elseif (!preg_match("/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/", $password)) {
         $error = "Password must be at least 8 characters, including 1 letter and 1 number.";
     } else {
@@ -42,7 +40,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
 
             $insert_sql = "INSERT INTO sellers (name, address, phone, email, username, password, registerTime) VALUES (?, ?, ?, ?, ?, ?, NOW())";
-            
             $stmt = mysqli_prepare($connection, $insert_sql);
             mysqli_stmt_bind_param($stmt, "ssssss", $name, $address, $phone, $email, $username, $password);
 
