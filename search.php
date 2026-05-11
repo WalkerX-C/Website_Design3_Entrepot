@@ -5,14 +5,24 @@ session_start();
 
 $raw_query = isset($_GET['q']) ? $_GET['q'] : "";
 
-//safe for %
 $safe_query = mysqli_real_escape_string($connection, $raw_query);
 $like_query = str_replace(['%', '_'], ['\%', '\_'], $safe_query);
 
 $sort = isset($_GET['sort']) ? $_GET['sort'] : "newest";
+$category = isset($_GET['category']) ? $_GET['category'] : "all";
 
-// sql
 $sql = "SELECT * FROM products WHERE (productName LIKE '%$like_query%' OR brand LIKE '%$like_query%')";
+
+$category_sql_map = array(
+    "phones" => "(productName LIKE '%phone%' OR productName LIKE '%Galaxy%' OR model LIKE '%phone%')",
+    "computers" => "(productName LIKE '%MacBook%' OR productName LIKE '%iPad%' OR productName LIKE '%Vision%' OR model LIKE '%Pro%')",
+    "audio" => "(productName LIKE '%AirPods%' OR productName LIKE '%Speaker%' OR brand LIKE '%JBL%')",
+    "gaming" => "(productName LIKE '%Nintendo%' OR productName LIKE '%Switch%' OR productName LIKE '%PlayStation%' OR model LIKE '%PS5%')"
+);
+
+if (isset($category_sql_map[$category])) {
+    $sql .= " AND " . $category_sql_map[$category];
+}
 
 
 if ($sort == "priceLH") {
@@ -32,6 +42,7 @@ $result = mysqli_query($connection, $sql);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="login&search.css">
+    <link rel="stylesheet" href="theme.css">
     <title>Search & Filter Products</title>
 </head>
 <body>
@@ -57,7 +68,7 @@ $result = mysqli_query($connection, $sql);
     </nav>
     
     <?php if(isset($_SESSION['success_msg'])): ?>
-        <div style="width: 92%; max-width: 1440px; margin: 20px auto; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; font-family: sans-serif;">
+        <div class="notice success">
             <?php 
                 echo htmlspecialchars($_SESSION['success_msg']); 
                 unset($_SESSION['success_msg']); 
@@ -66,7 +77,7 @@ $result = mysqli_query($connection, $sql);
     <?php endif; ?>
 
     <?php if(isset($_SESSION['error_msg'])): ?>
-        <div style="width: 92%; max-width: 1440px; margin: 20px auto; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; background-color: #fce8e6; color: #d93025; border: 1px solid #fad2cf; font-family: sans-serif;">
+        <div class="notice error">
             <?php 
                 echo htmlspecialchars($_SESSION['error_msg']); 
                 unset($_SESSION['error_msg']); 
@@ -76,24 +87,36 @@ $result = mysqli_query($connection, $sql);
 
     <main class="search-container">
         <div class="search-header">
-            <form action="search.php" method="GET" style="width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 20px;">
-                <input type="text" name="q" class="search-input" placeholder="Search products..." value="<?php echo htmlspecialchars($raw_query); ?>">
-                <select name="sort" class="sort-dropdown" onchange="this.form.submit()">
-                    <option value="newest" <?php if($sort=='newest') echo 'selected'; ?>>Sort by: Newest</option>
-                    <option value="priceLH" <?php if($sort=='priceLH') echo 'selected'; ?>>Sort by: Price (Low to High)</option>
-                    <option value="priceHL" <?php if($sort=='priceHL') echo 'selected'; ?>>Sort by: Price (High to Low)</option>
-                </select>
+            <form action="search.php" method="GET" class="search-form">
+                <div class="search-field-row">
+                    <input type="text" name="q" class="search-input" placeholder="Search products..." value="<?php echo htmlspecialchars($raw_query); ?>">
+                </div>
+
+                <div class="search-tools-row">
+                    <label class="sort-label" for="sortSelect">Sort by</label>
+                    <select id="sortSelect" name="sort" class="sort-dropdown" onchange="this.form.submit()">
+                        <option value="newest" <?php if($sort=='newest') echo 'selected'; ?>>Newest</option>
+                        <option value="priceLH" <?php if($sort=='priceLH') echo 'selected'; ?>>Price: Low to High</option>
+                        <option value="priceHL" <?php if($sort=='priceHL') echo 'selected'; ?>>Price: High to Low</option>
+                    </select>
+                </div>
+
+                <input type="hidden" name="category" value="<?php echo htmlspecialchars($category, ENT_QUOTES, 'UTF-8'); ?>">
             </form>
         </div>
 
         <div class="layout-wrapper">
             <aside class="filter-sidebar">
-                <div class="filter-group">
+                <form class="filter-group" action="search.php" method="GET">
+                    <input type="hidden" name="q" value="<?php echo htmlspecialchars($raw_query, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sort, ENT_QUOTES, 'UTF-8'); ?>">
                     <h3>Product Categories</h3>
-                    <label class="filter-label"><input type="checkbox"> Phones</label>
-                    <label class="filter-label"><input type="checkbox"> Laptops</label>
-                    <label class="filter-label"><input type="checkbox"> Accessories</label>
-                </div>
+                    <label class="filter-label"><input type="radio" name="category" value="all" onchange="this.form.submit()" <?php if($category=='all') echo 'checked'; ?>> All Products</label>
+                    <label class="filter-label"><input type="radio" name="category" value="phones" onchange="this.form.submit()" <?php if($category=='phones') echo 'checked'; ?>> Phones</label>
+                    <label class="filter-label"><input type="radio" name="category" value="computers" onchange="this.form.submit()" <?php if($category=='computers') echo 'checked'; ?>> Computers & Tablets</label>
+                    <label class="filter-label"><input type="radio" name="category" value="audio" onchange="this.form.submit()" <?php if($category=='audio') echo 'checked'; ?>> Audio</label>
+                    <label class="filter-label"><input type="radio" name="category" value="gaming" onchange="this.form.submit()" <?php if($category=='gaming') echo 'checked'; ?>> Gaming</label>
+                </form>
             </aside>
 
             <section class="product-grid" id="resultsGrid">
@@ -102,15 +125,16 @@ $result = mysqli_query($connection, $sql);
                         
                         <div class="product-card" 
                              style="cursor: pointer;" 
-                             onclick="window.location.href='product.php?id=<?php echo $row['productID']; ?>'">
+                             onclick="window.location.href='product.php?id=<?php echo (int)$row['productID']; ?>'">
                             
-                            <img src="<?php echo htmlspecialchars($row['image']); ?>" alt="Product">
+                            <img src="<?php echo htmlspecialchars($row['image'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($row['productName'], ENT_QUOTES, 'UTF-8'); ?>">
                             <div class="product-title"><?php echo htmlspecialchars($row['productName']); ?></div>
-                            <div class="product-price">$<?php echo number_format($row['price'], 2); ?></div>
+                            <div class="product-price">$<?php echo number_format((float)$row['price'], 2); ?></div>
                             
                             
                             <form action="add_to_cart.php" method="POST" onclick="event.stopPropagation();">
-                                <input type="hidden" name="product_id" value="<?php echo $row['productID']; ?>">
+                                <input type="hidden" name="product_id" value="<?php echo (int)$row['productID']; ?>">
+                                <input type="hidden" name="redirect" value="search.php<?php echo !empty($_SERVER['QUERY_STRING']) ? '?' . htmlspecialchars($_SERVER['QUERY_STRING'], ENT_QUOTES, 'UTF-8') : ''; ?>">
                                 <button type="submit" class="btn-add">Add to Bag</button>
                             </form>
                         </div>
